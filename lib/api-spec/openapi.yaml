@@ -3,20 +3,31 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Redx AI API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: chats
+    description: Chat session management
+  - name: messages
+    description: Chat messages and AI responses
+  - name: builds
+    description: APK build operations
+  - name: settings
+    description: App settings
+  - name: github
+    description: GitHub integration
+  - name: models
+    description: AI model listing
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +35,321 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /chats:
+    get:
+      operationId: listChats
+      tags: [chats]
+      summary: List all chat sessions
+      responses:
+        "200":
+          description: List of chats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Chat"
+    post:
+      operationId: createChat
+      tags: [chats]
+      summary: Create a new chat session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatInput"
+      responses:
+        "201":
+          description: Created chat
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Chat"
+
+  /chats/{id}:
+    get:
+      operationId: getChat
+      tags: [chats]
+      summary: Get a chat session with messages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Chat with messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatWithMessages"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateChat
+      tags: [chats]
+      summary: Update chat title
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatUpdate"
+      responses:
+        "200":
+          description: Updated chat
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Chat"
+    delete:
+      operationId: deleteChat
+      tags: [chats]
+      summary: Delete a chat session
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /chats/{id}/messages:
+    get:
+      operationId: listMessages
+      tags: [messages]
+      summary: List messages in a chat
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+    post:
+      operationId: sendMessage
+      tags: [messages]
+      summary: Send a message and get AI response
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageInput"
+      responses:
+        "200":
+          description: AI response message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /builds:
+    get:
+      operationId: listBuilds
+      tags: [builds]
+      summary: List all APK builds
+      responses:
+        "200":
+          description: List of builds
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Build"
+    post:
+      operationId: createBuild
+      tags: [builds]
+      summary: Start a new APK build
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BuildInput"
+      responses:
+        "201":
+          description: Build started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Build"
+
+  /builds/summary:
+    get:
+      operationId: getBuildsSummary
+      tags: [builds]
+      summary: Get builds summary stats
+      responses:
+        "200":
+          description: Summary stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuildsSummary"
+
+  /builds/{id}:
+    get:
+      operationId: getBuild
+      tags: [builds]
+      summary: Get build details and status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Build details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuildDetail"
+        "404":
+          description: Not found
+
+  /builds/{id}/poll:
+    post:
+      operationId: pollBuild
+      tags: [builds]
+      summary: Poll build status from GitHub and auto-fix errors
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated build status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuildDetail"
+
+  /builds/{id}/logs:
+    get:
+      operationId: getBuildLogs
+      tags: [builds]
+      summary: Get build logs
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Build logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuildLogs"
+
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get app settings
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+    patch:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update app settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SettingsUpdate"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+
+  /github/verify:
+    post:
+      operationId: verifyGitHub
+      tags: [github]
+      summary: Verify GitHub token and repo access
+      responses:
+        "200":
+          description: GitHub connection status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GitHubStatus"
+
+  /github/init-repo:
+    post:
+      operationId: initRepo
+      tags: [github]
+      summary: Initialize GitHub repo with Android project files
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepoInitInput"
+      responses:
+        "200":
+          description: Repo initialized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GitHubStatus"
+
+  /models:
+    get:
+      operationId: listModels
+      tags: [models]
+      summary: List available AI models
+      responses:
+        "200":
+          description: List of AI models
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AiModel"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +357,260 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    Chat:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        model:
+          type: string
+        messageCount:
+          type: integer
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, title, model, messageCount, createdAt, updatedAt]
+
+    ChatInput:
+      type: object
+      properties:
+        title:
+          type: string
+        model:
+          type: string
+      required: [title]
+
+    ChatUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        model:
+          type: string
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+        chatId:
+          type: integer
+        role:
+          type: string
+          enum: [user, assistant, system]
+        content:
+          type: string
+        model:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required: [id, chatId, role, content, createdAt]
+
+    MessageInput:
+      type: object
+      properties:
+        content:
+          type: string
+        model:
+          type: string
+      required: [content]
+
+    ChatWithMessages:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        model:
+          type: string
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, title, model, messages, createdAt, updatedAt]
+
+    Build:
+      type: object
+      properties:
+        id:
+          type: integer
+        appName:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [queued, pushing, running, fixing, success, failed]
+        runId:
+          type: ["integer", "null"]
+        attempt:
+          type: integer
+        apkUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, appName, description, status, attempt, createdAt, updatedAt]
+
+    BuildInput:
+      type: object
+      properties:
+        appName:
+          type: string
+        description:
+          type: string
+        model:
+          type: string
+      required: [appName, description]
+
+    BuildDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        appName:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [queued, pushing, running, fixing, success, failed]
+        runId:
+          type: ["integer", "null"]
+        attempt:
+          type: integer
+        apkUrl:
+          type: ["string", "null"]
+        logs:
+          type: ["string", "null"]
+        fixSummary:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, appName, description, status, attempt, createdAt, updatedAt]
+
+    BuildLogs:
+      type: object
+      properties:
+        buildId:
+          type: integer
+        logs:
+          type: string
+        fixHistory:
+          type: array
+          items:
+            $ref: "#/components/schemas/FixAttempt"
+      required: [buildId, logs, fixHistory]
+
+    FixAttempt:
+      type: object
+      properties:
+        attempt:
+          type: integer
+        error:
+          type: string
+        fix:
+          type: string
+        timestamp:
+          type: string
+      required: [attempt, error, fix, timestamp]
+
+    BuildsSummary:
+      type: object
+      properties:
+        total:
+          type: integer
+        success:
+          type: integer
+        failed:
+          type: integer
+        running:
+          type: integer
+      required: [total, success, failed, running]
+
+    Settings:
+      type: object
+      properties:
+        openrouterKeySet:
+          type: boolean
+        githubTokenSet:
+          type: boolean
+        githubUsername:
+          type: string
+        githubRepo:
+          type: string
+        defaultModel:
+          type: string
+        firebaseConfigSet:
+          type: boolean
+      required: [openrouterKeySet, githubTokenSet, githubUsername, githubRepo, defaultModel, firebaseConfigSet]
+
+    SettingsUpdate:
+      type: object
+      properties:
+        openrouterKey:
+          type: string
+        githubToken:
+          type: string
+        githubUsername:
+          type: string
+        githubRepo:
+          type: string
+        defaultModel:
+          type: string
+        firebaseConfig:
+          type: string
+
+    GitHubStatus:
+      type: object
+      properties:
+        connected:
+          type: boolean
+        username:
+          type: string
+        repo:
+          type: string
+        repoUrl:
+          type: ["string", "null"]
+        message:
+          type: string
+      required: [connected, message]
+
+    RepoInitInput:
+      type: object
+      properties:
+        appName:
+          type: string
+        packageName:
+          type: string
+        description:
+          type: string
+      required: [appName, packageName, description]
+
+    AiModel:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        contextLength:
+          type: integer
+        free:
+          type: boolean
+      required: [id, name, description, contextLength, free]

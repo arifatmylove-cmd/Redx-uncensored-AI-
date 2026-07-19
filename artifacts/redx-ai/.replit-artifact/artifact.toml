@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Redx AI"
+version = "1.0.0"
+id = "artifacts/redx-ai"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22836
+
+[services.development]
+run = "pnpm --filter @workspace/redx-ai run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/redx-ai", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/redx-ai/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22836"
+BASE_PATH = "/"
