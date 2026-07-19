@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="splash_bg">#0A0A0A</color>
+    <color name="redx_red">#CC0000</color>
+    <color name="redx_dark">#0A0A0A</color>
+</resources>
