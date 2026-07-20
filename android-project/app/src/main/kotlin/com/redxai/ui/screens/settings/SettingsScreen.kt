@@ -33,7 +33,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
+    val state   by viewModel.state.collectAsState()
     val context = LocalContext.current
 
     Column(
@@ -41,7 +41,7 @@ fun SettingsScreen(
             .fillMaxSize()
             .background(RedxBackground)
     ) {
-        // Top bar
+        // ── Top bar ──────────────────────────────────────────────────────────
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -57,20 +57,15 @@ fun SettingsScreen(
         HorizontalDivider(color = RedxBorder)
 
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .navigationBarsPadding(),
-            contentPadding = PaddingValues(16.dp),
+            modifier            = Modifier.fillMaxSize().navigationBarsPadding(),
+            contentPadding      = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            // ── Venice.ai (Primary AI) ────────────────────────────────────────
+            // ── Venice.ai (Primary AI) ───────────────────────────────────────
             item {
-                SettingsSection(
-                    title    = "Venice.ai — Uncensored AI",
-                    icon     = Icons.Default.Lock,
-                    iconTint = RedxRed
-                ) {
+                SettingsSection(title = "AI Configuration", icon = Icons.Default.Psychology, iconTint = RedxRed) {
+
                     // Provider toggle
                     Row(
                         modifier = Modifier
@@ -79,7 +74,7 @@ fun SettingsScreen(
                             .background(RedxSurfaceVariant)
                             .padding(4.dp)
                     ) {
-                        listOf("venice" to "Venice (Uncensored)", "openrouter" to "OpenRouter").forEach { (key, label) ->
+                        listOf("venice" to "🔓 Venice (Uncensored)", "openrouter" to "🌐 OpenRouter").forEach { (key, label) ->
                             val selected = state.aiProvider == key
                             Box(
                                 modifier = Modifier
@@ -87,31 +82,50 @@ fun SettingsScreen(
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(if (selected) RedxRed else Color.Transparent)
                                     .clickable { viewModel.setAiProvider(key) }
-                                    .padding(vertical = 8.dp),
+                                    .padding(vertical = 10.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     label,
-                                    color = if (selected) Color.White else RedxTextSecondary,
-                                    fontSize = 12.sp,
+                                    color      = if (selected) Color.White else RedxTextSecondary,
+                                    fontSize   = 12.sp,
                                     fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
                                 )
                             }
                         }
                     }
 
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(14.dp))
 
                     if (state.aiProvider == "venice") {
-                        SecretField(
-                            label       = "Venice API Key",
-                            value       = state.veniceKey,
-                            onValueChange = viewModel::setVeniceKey,
-                            placeholder = "your-venice-api-key",
-                            helper      = "Get a free key at venice.ai/settings/api · Fully uncensored, no filters"
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        // Link to Venice.ai
+                        // Step 1 instruction
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(RedxRed.copy(alpha = 0.07f))
+                                .border(1.dp, RedxRed.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                                .padding(12.dp)
+                        ) {
+                            Column {
+                                Text("How to get your free Venice.ai key:", color = RedxTextPrimary,
+                                    fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                Spacer(Modifier.height(6.dp))
+                                listOf(
+                                    "1. Tap the button below to open venice.ai",
+                                    "2. Create a free account (or sign in)",
+                                    "3. Go to Settings → API Keys → Generate",
+                                    "4. Copy the key and paste it below",
+                                    "5. Tap Save, then Test Connection"
+                                ).forEach { step ->
+                                    Text(step, color = RedxTextSecondary, fontSize = 12.sp, lineHeight = 19.sp)
+                                }
+                            }
+                        }
+
+                        Spacer(Modifier.height(10.dp))
+
+                        // Open venice.ai button
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -119,29 +133,50 @@ fun SettingsScreen(
                                 .border(1.dp, RedxRed.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
                                 .clickable {
                                     context.startActivity(
-                                        Intent(Intent.ACTION_VIEW,
-                                            Uri.parse("https://venice.ai/settings/api"))
+                                        Intent(Intent.ACTION_VIEW, Uri.parse("https://venice.ai/settings/api"))
                                     )
                                 }
                                 .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
+                            verticalAlignment  = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Icon(Icons.Default.OpenInBrowser, contentDescription = null,
-                                tint = RedxRed, modifier = Modifier.size(16.dp))
+                                tint = RedxRed, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text("Get Venice API Key (Free) →", color = RedxRed,
-                                fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                            Text("Open venice.ai → Get Free API Key", color = RedxRed,
+                                fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                         }
-                    } else {
+
+                        Spacer(Modifier.height(10.dp))
+
                         SecretField(
-                            label       = "OpenRouter API Key",
-                            value       = state.openrouterKey,
-                            onValueChange = viewModel::setOpenrouterKey,
-                            placeholder = "sk-or-xxxxxxxxxxxxxxxxxxxx",
-                            helper      = "Get a free key at openrouter.ai · Some models are FREE, others need credits"
+                            label         = "Venice API Key",
+                            value         = state.veniceKey,
+                            onValueChange = viewModel::setVeniceKey,
+                            placeholder   = "Paste your Venice API key here…",
+                            helper        = "Free key from venice.ai · Fully uncensored, zero filters"
                         )
-                        Spacer(Modifier.height(8.dp))
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color(0xFF6E40C9).copy(alpha = 0.07f))
+                                .border(1.dp, Color(0xFF6E40C9).copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                                .padding(12.dp)
+                        ) {
+                            Column {
+                                Text("Free OpenRouter models (no credits needed):", color = RedxTextPrimary,
+                                    fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                Spacer(Modifier.height(4.dp))
+                                Text("Gemini 2.0 Flash · DeepSeek R1 · Llama 3.3 70B · Qwen3 235B",
+                                    color = RedxTextSecondary, fontSize = 12.sp)
+                                Spacer(Modifier.height(8.dp))
+                                Text("1. Open openrouter.ai and create a free account\n2. Generate an API key\n3. Paste it below",
+                                    color = RedxTextSecondary, fontSize = 12.sp, lineHeight = 18.sp)
+                            }
+                        }
+                        Spacer(Modifier.height(10.dp))
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -149,8 +184,7 @@ fun SettingsScreen(
                                 .border(1.dp, Color(0xFF6E40C9).copy(alpha = 0.4f), RoundedCornerShape(8.dp))
                                 .clickable {
                                     context.startActivity(
-                                        Intent(Intent.ACTION_VIEW,
-                                            Uri.parse("https://openrouter.ai/keys"))
+                                        Intent(Intent.ACTION_VIEW, Uri.parse("https://openrouter.ai/keys"))
                                     )
                                 }
                                 .padding(12.dp),
@@ -158,53 +192,128 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Icon(Icons.Default.OpenInBrowser, contentDescription = null,
-                                tint = Color(0xFF6E40C9), modifier = Modifier.size(16.dp))
+                                tint = Color(0xFF6E40C9), modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text("Get OpenRouter Key →", color = Color(0xFF6E40C9),
-                                fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                            Text("Open openrouter.ai → Get Free Key", color = Color(0xFF6E40C9),
+                                fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                         }
+                        Spacer(Modifier.height(10.dp))
+                        SecretField(
+                            label         = "OpenRouter API Key",
+                            value         = state.openrouterKey,
+                            onValueChange = viewModel::setOpenrouterKey,
+                            placeholder   = "sk-or-xxxxxxxxxxxxxxxxxxxx",
+                            helper        = "Free key from openrouter.ai — many free models available"
+                        )
                     }
 
                     Spacer(Modifier.height(12.dp))
-                    SettingsButton(
-                        text = "Save AI Settings",
-                        icon = Icons.Default.Save,
-                        onClick = viewModel::saveAiSettings,
-                        isLoading = state.isSaving,
-                        color = RedxRed
-                    )
+
+                    // Save + Test row
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        SettingsButton(
+                            text      = "Save Key",
+                            icon      = Icons.Default.Save,
+                            onClick   = viewModel::saveAiSettings,
+                            isLoading = state.isSaving,
+                            color     = RedxRed,
+                            modifier  = Modifier.weight(1f)
+                        )
+                        if (state.aiProvider == "venice") {
+                            SettingsButton(
+                                text      = "Test Connection",
+                                icon      = Icons.Default.Wifi,
+                                onClick   = viewModel::testVeniceConnection,
+                                isLoading = state.isTesting,
+                                color     = RedxGreen,
+                                modifier  = Modifier.weight(1f)
+                            )
+                        }
+                    }
+
+                    // Save message
                     state.aiSaveMessage?.let { msg ->
                         Spacer(Modifier.height(6.dp))
                         Text(msg,
-                            color = if (msg.startsWith("✓")) RedxGreen else RedxRedBright,
-                            fontSize = 12.sp)
+                            color    = if (msg.startsWith("✓")) RedxGreen else RedxRedBright,
+                            fontSize = 12.sp, lineHeight = 17.sp)
+                    }
+
+                    // Test result
+                    state.aiTestMessage?.let { msg ->
+                        Spacer(Modifier.height(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    if (msg.startsWith("✓")) RedxGreen.copy(alpha = 0.1f)
+                                    else RedxRedBright.copy(alpha = 0.1f)
+                                )
+                                .border(
+                                    1.dp,
+                                    if (msg.startsWith("✓")) RedxGreen.copy(alpha = 0.3f)
+                                    else RedxRedBright.copy(alpha = 0.3f),
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .padding(10.dp)
+                        ) {
+                            Text(
+                                msg,
+                                color    = if (msg.startsWith("✓")) RedxGreen else RedxRedBright,
+                                fontSize = 12.sp, lineHeight = 17.sp
+                            )
+                        }
                     }
                 }
             }
 
-            // ── GitHub Integration ───────────────────────────────────────────
+            // ── GitHub Integration ──────────────────────────────────────────
             item {
-                SettingsSection(
-                    title    = "GitHub Integration",
-                    icon     = Icons.Default.Code,
-                    iconTint = Color(0xFF6E40C9)
-                ) {
+                SettingsSection(title = "GitHub Integration (APK Builder)", icon = Icons.Default.Code, iconTint = Color(0xFF6E40C9)) {
                     Text(
-                        "GitHub is used to push generated code and trigger APK builds via Actions.",
+                        "Required for the APK Builder. Your GitHub account is used to store generated code and run builds via GitHub Actions.",
                         color = RedxTextSecondary, fontSize = 12.sp, lineHeight = 17.sp
                     )
                     Spacer(Modifier.height(12.dp))
 
-                    // ── Quick Connect button ──────────────────────────────────
+                    // Step-by-step GitHub setup guide
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFF238636).copy(alpha = 0.07f))
+                            .border(1.dp, Color(0xFF238636).copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                            .padding(12.dp)
+                    ) {
+                        Column {
+                            Text("How to connect GitHub:", color = RedxTextPrimary,
+                                fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                            Spacer(Modifier.height(6.dp))
+                            listOf(
+                                "1. Tap 'Generate GitHub Token' below",
+                                "2. Browser opens — all permissions are pre-selected",
+                                "3. Scroll down → click 'Generate token'",
+                                "4. Copy the token (starts with ghp_)",
+                                "5. Come back here, paste it in the Token field",
+                                "6. Fill in your GitHub username and repo name",
+                                "7. Tap Save then Verify"
+                            ).forEach { step ->
+                                Text(step, color = RedxTextSecondary, fontSize = 12.sp, lineHeight = 19.sp)
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(10.dp))
+
+                    // Quick Connect button
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(10.dp))
-                            .background(Color(0xFF238636).copy(alpha = 0.15f))
-                            .border(1.dp, Color(0xFF238636).copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                            .background(Color(0xFF238636).copy(alpha = 0.12f))
+                            .border(1.dp, Color(0xFF238636).copy(alpha = 0.4f), RoundedCornerShape(10.dp))
                             .clickable {
-                                // Opens GitHub PAT creation page with all required scopes pre-filled
-                                // User just clicks "Generate token" — no manual navigation needed
                                 context.startActivity(
                                     Intent(
                                         Intent.ACTION_VIEW,
@@ -224,9 +333,9 @@ fun SettingsScreen(
                             tint = Color(0xFF3FB950), modifier = Modifier.size(22.dp))
                         Spacer(Modifier.width(12.dp))
                         Column {
-                            Text("Quick Connect — Open GitHub",
-                                color = Color(0xFF3FB950), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                            Text("Opens GitHub with all permissions pre-selected.\nPaste the generated token below.",
+                            Text("Generate GitHub Token", color = Color(0xFF3FB950),
+                                fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("Opens GitHub with all permissions pre-selected → just click Generate",
                                 color = Color(0xFF3FB950).copy(alpha = 0.7f), fontSize = 11.sp, lineHeight = 15.sp)
                         }
                     }
@@ -234,27 +343,28 @@ fun SettingsScreen(
                     Spacer(Modifier.height(12.dp))
 
                     SettingsTextField(
-                        label       = "GitHub Username",
-                        value       = state.githubUsername,
+                        label         = "GitHub Username",
+                        value         = state.githubUsername,
                         onValueChange = viewModel::setGithubUsername,
-                        placeholder = "your-github-username"
+                        placeholder   = "your-github-username"
                     )
                     Spacer(Modifier.height(10.dp))
                     SettingsTextField(
-                        label       = "Repository Name",
-                        value       = state.githubRepo,
+                        label         = "Repository Name",
+                        value         = state.githubRepo,
                         onValueChange = viewModel::setGithubRepo,
-                        placeholder = "Redx-uncensored-AI-"
+                        placeholder   = "Redx-uncensored-AI-"
                     )
                     Spacer(Modifier.height(10.dp))
                     SecretField(
-                        label       = "Personal Access Token",
-                        value       = state.githubToken,
+                        label         = "Personal Access Token",
+                        value         = state.githubToken,
                         onValueChange = viewModel::setGithubToken,
-                        placeholder = "ghp_xxxxxxxxxxxxxxxxxxxx",
-                        helper      = "Generate via 'Quick Connect' above — needs: repo, workflow, read:user scopes"
+                        placeholder   = "ghp_xxxxxxxxxxxxxxxxxxxx",
+                        helper        = "Generated via 'Generate GitHub Token' above — starts with ghp_"
                     )
                     Spacer(Modifier.height(12.dp))
+
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         SettingsButton(
                             text      = "Save",
@@ -276,21 +386,17 @@ fun SettingsScreen(
                     state.githubMessage?.let { msg ->
                         Spacer(Modifier.height(6.dp))
                         Text(msg,
-                            color = if (msg.startsWith("✓")) RedxGreen else RedxRedBright,
+                            color    = if (msg.startsWith("✓")) RedxGreen else RedxRedBright,
                             fontSize = 12.sp)
                     }
                 }
             }
 
-            // ── Firebase (Optional) ──────────────────────────────────────────
+            // ── Firebase (Optional) ─────────────────────────────────────────
             item {
-                SettingsSection(
-                    title    = "Firebase (Optional)",
-                    icon     = Icons.Default.LocalFireDepartment,
-                    iconTint = RedxOrange
-                ) {
+                SettingsSection(title = "Firebase (Optional)", icon = Icons.Default.LocalFireDepartment, iconTint = RedxOrange) {
                     Text(
-                        "Link Firebase to generated apps that need auth, Firestore, or storage. Paste your google-services.json content.",
+                        "Link Firebase to generated apps that need authentication, Firestore, or cloud storage. Paste your google-services.json content.",
                         color = RedxTextSecondary, fontSize = 12.sp, lineHeight = 17.sp
                     )
                     Spacer(Modifier.height(12.dp))
@@ -315,24 +421,20 @@ fun SettingsScreen(
                     state.firebaseMessage?.let { msg ->
                         Spacer(Modifier.height(6.dp))
                         Text(msg,
-                            color = if (msg.startsWith("✓")) RedxGreen else RedxRedBright,
+                            color    = if (msg.startsWith("✓")) RedxGreen else RedxRedBright,
                             fontSize = 12.sp)
                     }
                 }
             }
 
-            // ── About ────────────────────────────────────────────────────────
+            // ── About ───────────────────────────────────────────────────────
             item {
-                SettingsSection(
-                    title    = "About Redx AI",
-                    icon     = Icons.Default.Info,
-                    iconTint = RedxTextSecondary
-                ) {
+                SettingsSection(title = "About Redx AI", icon = Icons.Default.Info, iconTint = RedxTextSecondary) {
                     InfoRow("Version",       "2.0.0")
-                    InfoRow("Primary AI",    "Venice.ai (Dolphin 72B — uncensored)")
-                    InfoRow("Backup AI",     "OpenRouter (Gemini 2.0 Flash Free)")
+                    InfoRow("Primary AI",    "Venice.ai — fully uncensored (free)")
+                    InfoRow("Backup AI",     "OpenRouter — free & paid models")
                     InfoRow("Build Engine",  "GitHub Actions + Gradle 8.9")
-                    InfoRow("Chat-to-Build", "✓ Just ask me to build an app")
+                    InfoRow("Chat-to-Build", "✓ Describe an app in chat to build it")
                     InfoRow("Wake Lock",     "✓ CPU stays awake during builds")
                     InfoRow("Restrictions",  "None — fully unrestricted")
                 }
@@ -343,7 +445,7 @@ fun SettingsScreen(
     }
 }
 
-// ── Reusable composables ───────────────────────────────────────────────────────
+// ── Reusable composables ──────────────────────────────────────────────────────
 
 @Composable
 private fun SettingsSection(
@@ -381,17 +483,17 @@ private fun SecretField(
     var visible by remember { mutableStateOf(false) }
     Column {
         OutlinedTextField(
-            value                  = value,
-            onValueChange          = onValueChange,
-            label                  = { Text(label, color = RedxTextSecondary) },
-            placeholder            = { Text(placeholder, color = RedxTextMuted, fontSize = 12.sp) },
-            modifier               = Modifier.fillMaxWidth(),
-            colors                 = redxFieldColors(),
-            singleLine             = true,
-            shape                  = RoundedCornerShape(8.dp),
-            visualTransformation   = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
-            keyboardOptions        = KeyboardOptions(keyboardType = KeyboardType.Password),
-            trailingIcon           = {
+            value                = value,
+            onValueChange        = onValueChange,
+            label                = { Text(label, color = RedxTextSecondary) },
+            placeholder          = { Text(placeholder, color = RedxTextMuted, fontSize = 12.sp) },
+            modifier             = Modifier.fillMaxWidth(),
+            colors               = redxFieldColors(),
+            singleLine           = true,
+            shape                = RoundedCornerShape(8.dp),
+            visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
+            keyboardOptions      = KeyboardOptions(keyboardType = KeyboardType.Password),
+            trailingIcon         = {
                 IconButton(onClick = { visible = !visible }) {
                     Icon(
                         if (visible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
@@ -434,11 +536,11 @@ private fun SettingsButton(
     modifier: Modifier = Modifier
 ) {
     Button(
-        onClick   = onClick,
-        enabled   = !isLoading,
-        modifier  = modifier.height(44.dp),
-        shape     = RoundedCornerShape(8.dp),
-        colors    = ButtonDefaults.buttonColors(
+        onClick        = onClick,
+        enabled        = !isLoading,
+        modifier       = modifier.height(46.dp),
+        shape          = RoundedCornerShape(8.dp),
+        colors         = ButtonDefaults.buttonColors(
             containerColor         = color.copy(alpha = 0.15f),
             disabledContainerColor = color.copy(alpha = 0.08f)
         ),
@@ -464,13 +566,13 @@ private fun InfoRow(label: String, value: String) {
 
 @Composable
 private fun redxFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor   = RedxRed,
-    unfocusedBorderColor = RedxBorder,
-    focusedTextColor     = RedxTextPrimary,
-    unfocusedTextColor   = RedxTextPrimary,
-    cursorColor          = RedxRed,
-    focusedLabelColor    = RedxRed,
-    unfocusedLabelColor  = RedxTextSecondary,
+    focusedBorderColor      = RedxRed,
+    unfocusedBorderColor    = RedxBorder,
+    focusedTextColor        = RedxTextPrimary,
+    unfocusedTextColor      = RedxTextPrimary,
+    cursorColor             = RedxRed,
+    focusedLabelColor       = RedxRed,
+    unfocusedLabelColor     = RedxTextSecondary,
     focusedContainerColor   = Color.Transparent,
     unfocusedContainerColor = Color.Transparent
 )

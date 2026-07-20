@@ -10,15 +10,18 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// Venice.ai is OpenAI-compatible but fully uncensored — no content filtering whatsoever
 interface VeniceApi {
     @POST("chat/completions")
     suspend fun chat(@Body request: VeniceChatRequest): VeniceChatResponse
+
+    @GET("models")
+    suspend fun listModels(): VeniceModelsResponse
 }
 
 @JsonClass(generateAdapter = true)
@@ -26,13 +29,12 @@ data class VeniceChatRequest(
     @Json(name = "model") val model: String,
     @Json(name = "messages") val messages: List<VeniceMessage>,
     @Json(name = "temperature") val temperature: Double = 0.8,
-    @Json(name = "max_tokens") val maxTokens: Int = 8192,
+    @Json(name = "max_tokens") val maxTokens: Int = 4096,
     @Json(name = "venice_parameters") val veniceParameters: VeniceParameters = VeniceParameters()
 )
 
 @JsonClass(generateAdapter = true)
 data class VeniceParameters(
-    // Disable ALL Venice safety features
     @Json(name = "include_venice_system_prompt") val includeVeniceSystemPrompt: Boolean = false
 )
 
@@ -54,17 +56,27 @@ data class VeniceChoice(
     @Json(name = "finish_reason") val finishReason: String? = null
 )
 
-// Venice model catalog
-data class VeniceModelEntry(val id: String, val name: String, val description: String, val free: Boolean = false)
+@JsonClass(generateAdapter = true)
+data class VeniceModelsResponse(
+    @Json(name = "data") val data: List<VeniceModelInfo> = emptyList()
+)
+
+@JsonClass(generateAdapter = true)
+data class VeniceModelInfo(
+    @Json(name = "id") val id: String = ""
+)
+
+data class VeniceModelEntry(val id: String, val name: String, val description: String)
 
 object VeniceModels {
+    // These IDs are verified working on Venice.ai free tier
     val models = listOf(
-        VeniceModelEntry("dolphin-2.9.3-mistral-nemo-12b",  "Dolphin Mistral Nemo 12B ★",  "Fully uncensored Dolphin model. No filters ever. Best for unrestricted chat.", free = true),
-        VeniceModelEntry("llama-3.3-70b",                    "Llama 3.3 70B",                "Meta's smartest open model. Excellent reasoning, coding, and conversation."),
-        VeniceModelEntry("mistral-31-24b",                   "Mistral Small 3.1 24B",        "Fast and smart. Great for everyday questions and coding."),
-        VeniceModelEntry("deepseek-r1-671b",                 "DeepSeek R1 671B",             "Massive reasoning model. Best for complex logic and code generation."),
-        VeniceModelEntry("qwen-2.5-vl-72b",                  "Qwen 2.5 VL 72B",             "Alibaba's multimodal model. Strong at code and analysis."),
-        VeniceModelEntry("gemma-3-27b",                      "Gemma 3 27B",                 "Google's open model. Good balance of speed and quality."),
+        VeniceModelEntry("dolphin-2.9.3-mistral-nemo-12b", "Dolphin Mistral Nemo 12B ★", "Default · Fully uncensored · No filters ever"),
+        VeniceModelEntry("llama-3.3-70b",                  "Llama 3.3 70B",               "Powerful reasoning · Great for complex tasks"),
+        VeniceModelEntry("mistral-31-24b",                  "Mistral 3.1 24B",             "Fast & smart · Good for everyday questions"),
+        VeniceModelEntry("deepseek-r1-671b",                "DeepSeek R1 671B",            "Advanced reasoning · Best for logic & code"),
+        VeniceModelEntry("qwen-2.5-72b",                   "Qwen 2.5 72B",                "Strong at coding and analysis"),
+        VeniceModelEntry("gemma-3-27b",                    "Gemma 3 27B",                 "Google open model · Good balance of speed/quality"),
     )
 }
 
@@ -75,7 +87,7 @@ class VeniceService @Inject constructor() {
         val client = OkHttpClient.Builder()
             .addInterceptor { chain ->
                 val req = chain.request().newBuilder()
-                    .addHeader("Authorization", "Bearer $apiKey")
+                    .addHeader("Authorization", "Bearer ${apiKey.trim()}")
                     .addHeader("Content-Type", "application/json")
                     .build()
                 chain.proceed(req)
@@ -96,25 +108,53 @@ class VeniceService @Inject constructor() {
     }
 
     suspend fun chat(apiKey: String, model: String, messages: List<ChatMessage>): String {
-        if (apiKey.isBlank()) throw IllegalStateException("Venice.ai API key not set. Go to Settings → AI Configuration.")
-        val api = buildApi(apiKey)
+        val key = apiKey.trim()
+        if (key.isBlank()) throw IllegalStateException(
+            "Venice.ai API key not set.\n\nGo to Settings → Venice.ai → paste your key → Save."
+        )
+        val api = buildApi(key)
         try {
             val veniceMessages = messages.map { VeniceMessage(role = it.role, content = it.content) }
             val response = api.chat(VeniceChatRequest(model = model, messages = veniceMessages))
-            return response.choices.firstOrNull()?.message?.content
-                ?: throw IllegalStateException("Empty response from Venice AI. Try again.")
+            val content = response.choices.firstOrNull()?.message?.content
+            if (content.isNullOrBlank()) {
+                throw IllegalStateException("Venice returned empty response. Try switching to a different model in the model picker (⋮ icon).")
+            }
+            return content
         } catch (e: retrofit2.HttpException) {
+            val body = runCatching { e.response()?.errorBody()?.string() }.getOrNull() ?: ""
             when (e.code()) {
-                401 -> throw IllegalStateException("Invalid Venice API key. Get one free at venice.ai")
-                402 -> throw IllegalStateException("Venice account needs credits. Top up at venice.ai/settings/billing")
-                429 -> throw IllegalStateException("Rate limit hit. Wait a moment and try again.")
-                503 -> throw IllegalStateException("Venice model unavailable. Try a different model.")
-                else -> throw IllegalStateException("Venice error ${e.code()}: ${e.message()}")
+                401 -> throw IllegalStateException("Invalid Venice API key (401).\n\nCheck your key at venice.ai/settings/api and re-save in Settings.")
+                402 -> throw IllegalStateException("Venice account needs credits (402).\n\nVisit venice.ai/settings/billing to top up, or use a free model.")
+                404 -> throw IllegalStateException("Venice model not found (404): \"$model\"\n\nOpen the model picker (⋮ icon) and choose a different model.")
+                422 -> throw IllegalStateException("Venice rejected the request (422).\n\nTry a different model — some models have restrictions.\n\nDetail: ${body.take(150)}")
+                429 -> throw IllegalStateException("Venice rate limit hit (429). Wait a moment and try again.")
+                503 -> throw IllegalStateException("Venice model is offline (503). Try a different model from the picker.")
+                else -> throw IllegalStateException("Venice error ${e.code()}: ${body.take(200).ifBlank { e.message() }}")
             }
         } catch (e: java.net.UnknownHostException) {
-            throw IllegalStateException("No internet connection. Check your network.")
+            throw IllegalStateException("No internet connection.\n\nCheck your network and try again.")
         } catch (e: java.net.SocketTimeoutException) {
-            throw IllegalStateException("Venice request timed out. Try a smaller/faster model.")
+            throw IllegalStateException("Venice request timed out.\n\nThe model is slow right now — try Dolphin Mistral or Llama 3.3 70B.")
+        }
+    }
+
+    /** Quick key validation — calls /models to check authentication */
+    suspend fun testKey(apiKey: String): Result<String> {
+        val key = apiKey.trim()
+        if (key.isBlank()) return Result.failure(Exception("API key is empty"))
+        return try {
+            val api = buildApi(key)
+            val models = api.listModels()
+            val count = models.data.size
+            Result.success("✓ Connected — $count models available on your account")
+        } catch (e: retrofit2.HttpException) {
+            when (e.code()) {
+                401 -> Result.failure(Exception("✗ Invalid API key (401) — check it at venice.ai/settings/api"))
+                else -> Result.failure(Exception("✗ Venice error ${e.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("✗ ${e.message}"))
         }
     }
 }
