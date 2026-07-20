@@ -8,7 +8,7 @@ data class ChatRequest(
     @Json(name = "model") val model: String,
     @Json(name = "messages") val messages: List<ChatMessage>,
     @Json(name = "temperature") val temperature: Double = 0.7,
-    @Json(name = "max_tokens") val maxTokens: Int = 4096,
+    @Json(name = "max_tokens") val maxTokens: Int = 8192,
     @Json(name = "stream") val stream: Boolean = false
 )
 
@@ -51,24 +51,19 @@ data class ModelPricing(
     @Json(name = "completion") val completion: String? = null
 )
 
-// Curated list — FREE models first, then premium
+// OpenRouter free models (no credits needed)
 object RedxModels {
     val models = listOf(
-        // ── FREE TIER ───────────────────────────────────────────────────────────────
-        ModelEntry("google/gemini-2.0-flash-exp:free",          "Gemini 2.0 Flash (FREE ✓)",    "Google's fastest model. FREE. Smart, fast, great for chat & code."),
-        ModelEntry("deepseek/deepseek-r1:free",                  "DeepSeek R1 (FREE ✓)",         "Elite reasoning model, FREE tier. Best for complex logic & APK builds."),
-        ModelEntry("meta-llama/llama-3.3-70b-instruct:free",     "Llama 3.3 70B (FREE ✓)",       "Meta's newest large model. FREE. Very capable for code and reasoning."),
-        ModelEntry("microsoft/phi-4-reasoning-plus:free",        "Phi-4 Reasoning Plus (FREE ✓)","Microsoft reasoning model. FREE. Excellent at step-by-step problems."),
-        ModelEntry("qwen/qwen3-235b-a22b:free",                  "Qwen3 235B (FREE ✓)",          "Alibaba's massive 235B model. FREE. Top-tier intelligence."),
-        ModelEntry("mistralai/mistral-7b-instruct:free",         "Mistral 7B (FREE ✓)",          "Lightweight & fast. FREE. Good for everyday questions."),
-        // ── PREMIUM (requires OpenRouter credits) ───────────────────────────────────
-        ModelEntry("anthropic/claude-sonnet-4-5",                "Claude Sonnet 4.5 ★",          "Anthropic's smartest model. Like talking to Redx AI's creator. Paid."),
-        ModelEntry("anthropic/claude-opus-4-5",                  "Claude Opus 4.5 ★★",           "Anthropic's most powerful model. Best intelligence available. Paid."),
-        ModelEntry("openai/gpt-4o",                              "GPT-4o",                       "OpenAI flagship. Excellent coding & reasoning. Paid."),
-        ModelEntry("google/gemini-pro-1.5",                      "Gemini Pro 1.5",               "Google's premium model. 1M context window. Paid."),
-        ModelEntry("deepseek/deepseek-r1",                       "DeepSeek R1 (Paid)",           "DeepSeek R1 without rate limits. Paid."),
-        ModelEntry("qwen/qwen-2.5-coder-32b-instruct",           "Qwen 2.5 Coder 32B",          "Best model for Kotlin/Android code generation. Paid."),
-        ModelEntry("cognitivecomputations/dolphin-llama-3-70b",  "Dolphin Llama 3 70B",         "Uncensored, no restrictions. Best for unrestricted tasks. Paid."),
+        ModelEntry("google/gemini-2.0-flash-exp:free",       "Gemini 2.0 Flash (FREE ✓)",    "Google's fastest model. FREE. Smart, fast, great for chat & code."),
+        ModelEntry("deepseek/deepseek-r1:free",               "DeepSeek R1 (FREE ✓)",         "Elite reasoning model, FREE tier. Best for complex logic & APK builds."),
+        ModelEntry("meta-llama/llama-3.3-70b-instruct:free",  "Llama 3.3 70B (FREE ✓)",       "Meta's newest large model. FREE. Very capable for code and reasoning."),
+        ModelEntry("microsoft/phi-4-reasoning-plus:free",     "Phi-4 Reasoning Plus (FREE ✓)","Microsoft reasoning model. FREE. Excellent at step-by-step problems."),
+        ModelEntry("qwen/qwen3-235b-a22b:free",               "Qwen3 235B (FREE ✓)",          "Alibaba 235B model. FREE. Top-tier intelligence."),
+        ModelEntry("mistralai/mistral-7b-instruct:free",      "Mistral 7B (FREE ✓)",          "Lightweight & fast. FREE. Good for everyday questions."),
+        ModelEntry("anthropic/claude-sonnet-4-5",             "Claude Sonnet 4.5 ★",          "Anthropic's smartest model. Paid — needs credits."),
+        ModelEntry("openai/gpt-4o",                           "GPT-4o",                       "OpenAI flagship. Excellent coding & reasoning. Paid."),
+        ModelEntry("deepseek/deepseek-r1",                    "DeepSeek R1 (Paid)",           "DeepSeek R1 without rate limits. Paid."),
+        ModelEntry("cognitivecomputations/dolphin-llama-3-70b","Dolphin Llama 3 70B",         "Uncensored. No restrictions. Paid."),
     )
 }
 

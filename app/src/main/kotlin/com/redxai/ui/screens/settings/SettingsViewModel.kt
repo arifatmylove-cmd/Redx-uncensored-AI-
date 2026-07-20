@@ -13,16 +13,22 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class SettingsState(
-    val openrouterKey: String = "",
-    val defaultModel: String = "cognitivecomputations/dolphin-llama-3-70b",
-    val githubToken: String = "",
-    val githubUsername: String = "",
-    val githubRepo: String = "",
-    val firebaseConfig: String = "",
-    val isSaving: Boolean = false,
-    val isVerifying: Boolean = false,
-    val aiSaveMessage: String? = null,
-    val githubMessage: String? = null,
+    // AI
+    val veniceKey:       String = "",
+    val openrouterKey:   String = "",
+    val aiProvider:      String = "venice",   // "venice" | "openrouter"
+    val defaultModel:    String = "dolphin-2.9.3-mistral-nemo-12b",
+    // GitHub
+    val githubToken:     String = "",
+    val githubUsername:  String = "",
+    val githubRepo:      String = "",
+    // Firebase
+    val firebaseConfig:  String = "",
+    // UI state
+    val isSaving:        Boolean = false,
+    val isVerifying:     Boolean = false,
+    val aiSaveMessage:   String? = null,
+    val githubMessage:   String? = null,
     val firebaseMessage: String? = null
 )
 
@@ -38,46 +44,67 @@ class SettingsViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             combine(
+                prefs.veniceKey,
                 prefs.openrouterKey,
-                prefs.defaultModel,
-                prefs.githubToken,
-                prefs.githubUsername
-            ) { key, model, token, user -> listOf(key, model, token, user) }.collect { values ->
-                _state.value = _state.value.copy(
-                    openrouterKey = values[0],
-                    defaultModel = values[1],
-                    githubToken = values[2],
-                    githubUsername = values[3]
-                )
-            }
+                prefs.aiProvider,
+                prefs.defaultModel
+            ) { venice, or, prov, model -> listOf(venice, or, prov, model) }
+                .collect { v ->
+                    _state.value = _state.value.copy(
+                        veniceKey     = v[0],
+                        openrouterKey = v[1],
+                        aiProvider    = v[2],
+                        defaultModel  = v[3]
+                    )
+                }
         }
         viewModelScope.launch {
-            combine(prefs.githubRepo, prefs.firebaseConfig) { repo, firebase -> Pair(repo, firebase) }
-                .collect { (repo, firebase) ->
-                    _state.value = _state.value.copy(githubRepo = repo, firebaseConfig = firebase)
+            combine(
+                prefs.githubToken,
+                prefs.githubUsername,
+                prefs.githubRepo,
+                prefs.firebaseConfig
+            ) { tok, usr, repo, fb -> listOf(tok, usr, repo, fb) }
+                .collect { v ->
+                    _state.value = _state.value.copy(
+                        githubToken    = v[0],
+                        githubUsername = v[1],
+                        githubRepo     = v[2],
+                        firebaseConfig = v[3]
+                    )
                 }
         }
     }
 
-    fun setOpenrouterKey(v: String) { _state.value = _state.value.copy(openrouterKey = v, aiSaveMessage = null) }
-    fun setDefaultModel(v: String) { _state.value = _state.value.copy(defaultModel = v) }
-    fun setGithubToken(v: String) { _state.value = _state.value.copy(githubToken = v, githubMessage = null) }
+    // ── Setters ──────────────────────────────────────────────────────────────
+    fun setVeniceKey(v: String)      { _state.value = _state.value.copy(veniceKey = v, aiSaveMessage = null) }
+    fun setOpenrouterKey(v: String)  { _state.value = _state.value.copy(openrouterKey = v, aiSaveMessage = null) }
+    fun setAiProvider(v: String)     { _state.value = _state.value.copy(aiProvider = v) }
+    fun setDefaultModel(v: String)   { _state.value = _state.value.copy(defaultModel = v) }
+    fun setGithubToken(v: String)    { _state.value = _state.value.copy(githubToken = v, githubMessage = null) }
     fun setGithubUsername(v: String) { _state.value = _state.value.copy(githubUsername = v) }
-    fun setGithubRepo(v: String) { _state.value = _state.value.copy(githubRepo = v) }
+    fun setGithubRepo(v: String)     { _state.value = _state.value.copy(githubRepo = v) }
     fun setFirebaseConfig(v: String) { _state.value = _state.value.copy(firebaseConfig = v, firebaseMessage = null) }
 
+    // ── Save AI settings ─────────────────────────────────────────────────────
     fun saveAiSettings() = viewModelScope.launch {
         val s = _state.value
         _state.value = s.copy(isSaving = true)
         try {
+            prefs.setVeniceKey(s.veniceKey)
             prefs.setOpenrouterKey(s.openrouterKey)
-            prefs.setDefaultModel(s.defaultModel)
-            _state.value = _state.value.copy(isSaving = false, aiSaveMessage = "✓ Saved successfully")
+            prefs.setAiProvider(s.aiProvider)
+            prefs.setDefaultModel(
+                if (s.aiProvider == "venice") "dolphin-2.9.3-mistral-nemo-12b"
+                else "google/gemini-2.0-flash-exp:free"
+            )
+            _state.value = _state.value.copy(isSaving = false, aiSaveMessage = "✓ Saved")
         } catch (e: Exception) {
             _state.value = _state.value.copy(isSaving = false, aiSaveMessage = "Error: ${e.message}")
         }
     }
 
+    // ── Save GitHub settings ─────────────────────────────────────────────────
     fun saveGitHubSettings() = viewModelScope.launch {
         val s = _state.value
         prefs.setGithubToken(s.githubToken)
@@ -88,7 +115,7 @@ class SettingsViewModel @Inject constructor(
 
     fun verifyGitHub() = viewModelScope.launch {
         val s = _state.value
-        _state.value = s.copy(isVerifying = true, githubMessage = "Verifying...")
+        _state.value = s.copy(isVerifying = true, githubMessage = "Verifying…")
         try {
             prefs.setGithubToken(s.githubToken)
             prefs.setGithubUsername(s.githubUsername)
@@ -106,6 +133,7 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    // ── Firebase ─────────────────────────────────────────────────────────────
     fun saveFirebaseConfig() = viewModelScope.launch {
         prefs.setFirebaseConfig(_state.value.firebaseConfig)
         _state.value = _state.value.copy(firebaseMessage = "✓ Firebase config saved")

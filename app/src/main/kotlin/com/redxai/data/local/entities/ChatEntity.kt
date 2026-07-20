@@ -7,7 +7,8 @@ import androidx.room.PrimaryKey
 data class ChatEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val title: String,
-    val model: String = "cognitivecomputations/dolphin-llama-3-70b",
+    val model: String = "dolphin-2.9.3-mistral-nemo-12b",   // Venice default (uncensored, free)
+    val provider: String = "venice",                          // "venice" | "openrouter"
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 )
@@ -16,8 +17,9 @@ data class ChatEntity(
 data class MessageEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val chatId: Long,
-    val role: String, // user | assistant | system
+    val role: String,           // user | assistant | system | build
     val content: String,
     val model: String? = null,
+    val buildId: Long? = null,  // non-null for build-progress messages
     val createdAt: Long = System.currentTimeMillis()
 )
