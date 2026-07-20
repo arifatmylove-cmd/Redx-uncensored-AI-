@@ -11,7 +11,7 @@ import com.redxai.data.local.entities.MessageEntity
 
 @Database(
     entities = [ChatEntity::class, MessageEntity::class, BuildEntity::class],
-    version = 1,
+    version  = 2,         // bumped: added provider to ChatEntity, buildId to MessageEntity
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
